@@ -1,4 +1,9 @@
-import { StandardWebSocketClient, WebSocketClient } from "./deps.ts";
+import {
+  createHash,
+  readLines,
+  StandardWebSocketClient,
+  WebSocketClient,
+} from "./deps.ts";
 import { RoomRequest, RoomResponse } from "./types/mod.ts";
 import { ClientUser, Room } from "./models/mod.ts";
 
@@ -20,7 +25,7 @@ ws.on("open", function () {
   ws.send(JSON.stringify(req));
 });
 
-ws.on("message", function (message: MessageEvent) {
+ws.on("message", async function (message: MessageEvent) {
   const event: RoomResponse = JSON.parse(message.data);
 
   // console.log("event:", event);
@@ -59,26 +64,61 @@ ws.on("message", function (message: MessageEvent) {
       // 接続完了、ストリーム開始
       console.log("[SENDER] Ready!");
 
-      const testData = "Hello, World!";
+      const testData = new TextEncoder().encode("Hello, World");
 
-      const req: RoomRequest = {
-        type: "send",
+      const fileReader = Deno.openSync(Deno.cwd() + "/.gitignore");
+      const file = Deno.readFileSync(Deno.cwd() + "/.gitignore");
+
+      for await (const line of readLines(fileReader)) {
+        console.log(line);
+      }
+
+      // Deno.read(file.byteLength, file)
+
+      console.log("[SENDER] sending stream...");
+      // console.log("[SENDER] stream length:", stream.byteLength);
+
+      // loop with stream
+      for (const buffer of file) {
+        const res: RoomRequest = {
+          type: "stream",
+          payload: {
+            ...event.payload,
+            userId: user.uid,
+            data: buffer,
+            flag: "stream",
+          },
+        };
+
+        // console.log("[SENDER] res: ", res);
+
+        //TODO: 自分へ。ストリームしてください
+
+        ws.send(JSON.stringify(res));
+      }
+
+      const hasher = createHash("sha256");
+
+      const res: RoomRequest = {
+        type: "stream",
         payload: {
           ...event.payload,
           userId: user.uid,
-          data: testData,
+          data: null,
+          flag: "complete",
+          hash: hasher.update(file).toString(),
         },
       };
 
-      console.log("[SENDER] sending data...");
+      console.log("[SENDER] stream completed");
 
-      ws.send(JSON.stringify(req));
+      ws.send(JSON.stringify(res));
 
       break;
     }
 
     default: {
-      console.log("[SENDER] unknown event type:", event.type);
+      // console.log("[SENDER] unknown event type:", event.type);
       break;
     }
   }

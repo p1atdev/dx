@@ -14,3 +14,6 @@ export * from "https://deno.land/std@0.138.0/hash/mod.ts";
 
 // crypto
 export * as bcrypt from "https://deno.land/x/bcrypt@v0.3.0/mod.ts";
+
+// io
+export * from "https://deno.land/std@0.138.0/io/mod.ts";

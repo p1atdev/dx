@@ -1,4 +1,8 @@
-import { StandardWebSocketClient, WebSocketClient } from "./deps.ts";
+import {
+  createHash,
+  StandardWebSocketClient,
+  WebSocketClient,
+} from "./deps.ts";
 import { RoomRequest, RoomResponse } from "./types/mod.ts";
 import { ClientUser } from "./models/mod.ts";
 
@@ -7,8 +11,10 @@ const ws: WebSocketClient = new StandardWebSocketClient(endpoint);
 
 const user = new ClientUser("sender");
 
-const roomId = "279853";
-const roomSalt = "172642";
+const roomId = "821661";
+const roomSalt = "346742";
+
+let streamBuffer: number[] = [];
 
 ws.on("open", function () {
   console.log("[RECEIVER] ws connected!");
@@ -67,8 +73,51 @@ ws.on("message", function (message: MessageEvent) {
       break;
     }
 
+    case "stream": {
+      // データストリーム
+      console.log("[RECEIVER] stream received: ", event.payload);
+
+      const flag = event.payload.flag;
+
+      switch (flag) {
+        case "stream": {
+          // データストリーム受信
+          console.log("[RECEIVER] stream received!");
+
+          streamBuffer.push(event.payload.data);
+
+          break;
+        }
+        case "complete": {
+          // ストリーム完了
+
+          const bufferHash = event.payload.hash;
+
+          console.log("[RECEIVER] stream complete!");
+
+          console.log("[RECEIVER] stream buffer length: ", streamBuffer.length);
+
+          const hasher = createHash("sha256");
+
+          console.log(
+            "[RECEIVER] is stream valid?: ",
+            hasher.update(new Uint8Array(streamBuffer)).toString() ===
+              bufferHash,
+          );
+
+          // const text = new TextDecoder().decode(new Uint8Array(streamBuffer));
+
+          // console.log("text:", text);
+
+          break;
+        }
+      }
+
+      break;
+    }
+
     default: {
-      console.log("[RECEIVER] unknown event type:", event.type);
+      // console.log("[RECEIVER] unknown event type:", event.type);
       break;
     }
 

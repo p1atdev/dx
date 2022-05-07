@@ -158,6 +158,69 @@ wss.on("connection", function (ws: WebSocketClient) {
         break;
       }
 
+      case "stream": {
+        console.log("[SERVER] stream");
+
+        console.log("[SERVER] stream:", event.payload);
+
+        const userId = event.payload.userId;
+        const roomId = event.payload.roomId;
+        const salt = event.payload.salt;
+
+        const room = desk.getRoom(roomId, salt);
+
+        console.log("[SERVER] room:", room);
+
+        if (!room) {
+          console.log("[SERVER] room not found");
+
+          const res: RoomResponse = {
+            type: "stream",
+            payload: {},
+          };
+          ws.send(JSON.stringify(res));
+          break;
+        }
+
+        if (room.sender != userId) {
+          console.log("[SERVER] user is not valid");
+
+          const res: RoomResponse = {
+            type: "stream",
+            payload: {},
+          };
+          ws.send(JSON.stringify(res));
+          break;
+        }
+
+        const receiverId = room.receiver;
+
+        if (!receiverId) {
+          console.log("[SERVER] receiver not found");
+
+          const res: RoomResponse = {
+            type: "stream",
+            payload: {},
+          };
+          ws.send(JSON.stringify(res));
+          break;
+        }
+
+        const receiver = clients.get(receiverId);
+
+        const res: RoomResponse = {
+          type: "stream",
+          payload: {
+            ...event.payload,
+          },
+        };
+
+        receiver?.send(JSON.stringify(res));
+        ws.send(JSON.stringify(res));
+
+        break;
+      }
+
       default: {
         console.log("[SERVER] unknown event type:", event.type);
         ws.send("unknown event type: " + event.type);
