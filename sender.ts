@@ -1,18 +1,13 @@
-import {
-  createHash,
-  readLines,
-  StandardWebSocketClient,
-  WebSocketClient,
-} from "./deps.ts";
+import { createHash, readLines } from "./deps.ts";
 import { RoomRequest, RoomResponse } from "./types/mod.ts";
 import { ClientUser, Room } from "./models/mod.ts";
 
-const endpoint = "ws://127.0.0.1:8080";
-const ws: WebSocketClient = new StandardWebSocketClient(endpoint);
+const endpoint = "ws://localhost:8000";
+const ws = new WebSocket(endpoint);
 
 const user = new ClientUser("sender");
 
-ws.on("open", function () {
+ws.onopen = () => {
   console.log("[SENDER] ws connected!");
 
   const req: RoomRequest = {
@@ -23,13 +18,24 @@ ws.on("open", function () {
   };
 
   ws.send(JSON.stringify(req));
-});
+};
 
-ws.on("message", async function (message: MessageEvent) {
-  const event: RoomResponse = JSON.parse(message.data);
+ws.onmessage = (e) => {
+  console.log("[SENDER] received event:", e.data);
+  try {
+    const event: RoomResponse = JSON.parse(e.data);
 
-  // console.log("event:", event);
+    handleEvent(event, ws);
+  } catch {
+    console.log("[SENDER] error:", e.data);
+  }
+};
 
+ws.onclose = () => {
+  console.log("[SENDER] ws closed!");
+};
+
+const handleEvent = (event: RoomRequest, _socket: WebSocket) => {
   switch (event.type) {
     case "handshake": {
       // ハンドシェイクで取得したユーザーID
@@ -64,14 +70,14 @@ ws.on("message", async function (message: MessageEvent) {
       // 接続完了、ストリーム開始
       console.log("[SENDER] Ready!");
 
-      const testData = new TextEncoder().encode("Hello, World");
+      // const testData = new TextEncoder().encode("Hello, World");
 
-      const fileReader = Deno.openSync(Deno.cwd() + "/.gitignore");
-      const file = Deno.readFileSync(Deno.cwd() + "/.gitignore");
+      // const fileReader = Deno.openSync(Deno.cwd() + "/sample.zip");
+      const file = Deno.readFileSync(Deno.cwd() + "/sample.zip");
 
-      for await (const line of readLines(fileReader)) {
-        console.log(line);
-      }
+      // for await (const line of readLines(fileReader)) {
+      //   console.log(line);
+      // }
 
       // Deno.read(file.byteLength, file)
 
@@ -90,7 +96,7 @@ ws.on("message", async function (message: MessageEvent) {
           },
         };
 
-        // console.log("[SENDER] res: ", res);
+        console.log("[SENDER] res: ", res);
 
         //TODO: 自分へ。ストリームしてください
 
@@ -110,6 +116,8 @@ ws.on("message", async function (message: MessageEvent) {
         },
       };
 
+      console.log("[SENDER] res: ", res);
+
       console.log("[SENDER] stream completed");
 
       ws.send(JSON.stringify(res));
@@ -122,13 +130,4 @@ ws.on("message", async function (message: MessageEvent) {
       break;
     }
   }
-});
-
-ws.on("close", function () {
-  console.log("[SENDER] ws closed!");
-});
-
-// ws.on(RoomEvent.roomCreate, function (roomJSON: string) {
-//   const room = JSON.parse(roomJSON);
-//   console.log(room);
-// });
+};

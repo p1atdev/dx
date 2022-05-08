@@ -1,22 +1,18 @@
-import {
-  createHash,
-  StandardWebSocketClient,
-  WebSocketClient,
-} from "./deps.ts";
+import { createHash } from "./deps.ts";
 import { RoomRequest, RoomResponse } from "./types/mod.ts";
 import { ClientUser } from "./models/mod.ts";
 
-const endpoint = "ws://127.0.0.1:8080";
-const ws: WebSocketClient = new StandardWebSocketClient(endpoint);
+const endpoint = "ws://localhost:8000";
+const ws = new WebSocket(endpoint);
 
-const user = new ClientUser("sender");
+const user = new ClientUser("receiver");
 
-const roomId = "821661";
-const roomSalt = "346742";
+const roomId = "948717";
+const roomSalt = "328387";
 
-let streamBuffer: number[] = [];
+const streamBuffer: number[] = [];
 
-ws.on("open", function () {
+ws.onopen = () => {
   console.log("[RECEIVER] ws connected!");
 
   const req: RoomRequest = {
@@ -27,10 +23,10 @@ ws.on("open", function () {
   };
 
   ws.send(JSON.stringify(req));
-});
+};
 
-ws.on("message", function (message: MessageEvent) {
-  const event: RoomResponse = JSON.parse(message.data);
+ws.onmessage = (e) => {
+  const event: RoomResponse = JSON.parse(e.data);
 
   switch (event.type) {
     case "handshake": {
@@ -105,6 +101,11 @@ ws.on("message", function (message: MessageEvent) {
               bufferHash,
           );
 
+          Deno.writeFileSync(
+            Deno.cwd() + "/output/sample.zip",
+            new Uint8Array(streamBuffer),
+          );
+
           // const text = new TextDecoder().decode(new Uint8Array(streamBuffer));
 
           // console.log("text:", text);
@@ -126,13 +127,8 @@ ws.on("message", function (message: MessageEvent) {
       console.log("[RECEIVER] ready!");
     }
   }
-});
+};
 
-ws.on("close", function () {
+ws.onclose = () => {
   console.log("[RECEIVER] ws closed!");
-});
-
-// ws.on(RoomEvent.roomCreate, function (roomJSON: string) {
-//   const room = JSON.parse(roomJSON);
-//   console.log(room);
-// });
+};

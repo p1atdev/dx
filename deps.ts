@@ -7,7 +7,7 @@ export * from "https://deno.land/std@0.138.0/http/server.ts";
 export * from "https://deno.land/std@0.138.0/testing/asserts.ts";
 
 // ws
-export * from "https://deno.land/x/websocket@v0.1.4/mod.ts";
+// export * from "https://deno.land/x/websocket@v0.1.4/mod.ts";
 
 // hash
 export * from "https://deno.land/std@0.138.0/hash/mod.ts";
